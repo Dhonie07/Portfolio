@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adeboye Daniel Oluwaseun — Video Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0b0d;
+    --surface:#131519;
+    --surface-2:#1a1d22;
+    --line:#262a30;
+    --text:#ece8e1;
+    --muted:#8a8f98;
+    --teal:#2fd4c0;
+    --teal-dim:#1c7d70;
+    --amber:#e8873a;
+    --amber-dim:#9c5a24;
+    --radius:2px;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  html{scroll-behavior:smooth;}
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  ::selection{background:var(--teal);color:#0a0b0d;}
+
+  a{color:inherit;text-decoration:none;}
+
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  .display{
+    font-family:'Bebas Neue',sans-serif;
+    letter-spacing:0.02em;
+    line-height:0.92;
+  }
+
+  /* film grain texture */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    pointer-events:none;
+    opacity:0.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ============ NAV ============ */
+  header{
+    position:fixed;
+    top:0;left:0;right:0;
+    z-index:500;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:20px clamp(20px,5vw,56px);
+    background:linear-gradient(to bottom, rgba(10,11,13,0.92), rgba(10,11,13,0));
+    backdrop-filter:blur(6px);
+  }
+
+  .logo{
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:0.08em;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .logo .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--amber);
+    animation:blink 1.6s infinite;
+  }
+  @keyframes blink{0%,45%{opacity:1;}50%,95%{opacity:0.15;}100%{opacity:1;}}
+
+  nav ul{
+    list-style:none;
+    display:flex;
+    gap:clamp(16px,3vw,36px);
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  nav ul a{transition:color 0.2s;position:relative;}
+  nav ul a:hover{color:var(--text);}
+  nav ul a:focus-visible{outline:1px solid var(--teal);outline-offset:4px;}
+
+  @media(max-width:640px){
+    nav ul{display:none;}
+  }
+
+  /* ============ PLAYHEAD RAIL (signature element) ============ */
+  #rail{
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    width:64px;
+    z-index:400;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding-top:100px;
+    pointer-events:none;
+  }
+  #rail .track-line{
+    position:absolute;
+    top:100px;bottom:60px;
+    width:1px;
+    background:var(--line);
+    left:31px;
+  }
+  #rail .playhead{
+    position:absolute;
+    left:31px;
+    top:100px;
+    width:1px;
+    height:0;
+    background:linear-gradient(to bottom, var(--teal), var(--amber));
+    box-shadow:0 0 8px rgba(47,212,192,0.6);
+    transition:height 0.1s linear;
+  }
+  #rail .tc{
+    position:absolute;
+    left:12px;
+    top:calc(100px - 24px);
+    font-size:9px;
+    color:var(--teal);
+    white-space:nowrap;
+    transform:translateY(0);
+  }
+  @media(max-width:900px){
+    #rail{display:none;}
+  }
+
+  main{position:relative;}
+  section{
+    padding:120px clamp(20px,6vw,80px);
+    position:relative;
+  }
+  @media(min-width:901px){
+    section{padding-left:calc(64px + clamp(20px,6vw,80px));}
+  }
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--amber);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:20px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px;height:1px;
+    background:var(--amber);
+  }
+
+  /* ============ HERO ============ */
+  #hero{
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding-top:140px;
+    padding-bottom:80px;
+  }
+
+  .hero-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:0.1em;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .rec{
+    display:flex;align-items:center;gap:8px;
+    color:#e8523a;
+  }
+  .rec .dot{width:8px;height:8px;border-radius:50%;background:#e8523a;animation:blink 1s infinite;}
+
+  h1.display{
+    font-size:clamp(52px,10vw,132px);
+    color:var(--text);
+    margin-bottom:10px;
+  }
+  h1.display span{
+    display:block;
+    color:transparent;
+    -webkit-text-stroke:1.5px var(--teal);
+  }
+
+  .role-line{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 14px;
+    margin-top:24px;
+    font-size:clamp(13px,2vw,16px);
+    color:var(--muted);
+    align-items:center;
+  }
+  .role-line .pill{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    padding:5px 12px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    color:var(--text);
+  }
+  .role-line .sep{color:var(--line);}
+
+  .hero-meta{
+    margin-top:56px;
+    display:flex;
+    gap:clamp(24px,5vw,64px);
+    flex-wrap:wrap;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+  }
+  .hero-meta a{color:var(--text);border-bottom:1px solid var(--teal-dim);padding-bottom:2px;transition:border-color 0.2s,color 0.2s;}
+  .hero-meta a:hover{border-color:var(--teal);color:var(--teal);}
+  .hero-meta .label{color:var(--muted);display:block;margin-bottom:6px;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;}
+
+  /* ============ CONTACT ============ */
+  #contact-section .contact-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:40px;
+    margin-top:40px;
+  }
+  .contact-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    padding:30px;
+    border-radius:2px;
+  }
+  .contact-card .label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:10px;
+    display:block;
+  }
+  .contact-card .value{
+    font-family:'JetBrains Mono',monospace;
+    font-size:16px;
+    color:var(--text);
+  }
+  .contact-card .value a{border-bottom:1px solid var(--teal-dim);padding-bottom:2px;transition:color 0.2s,border-color 0.2s;}
+  .contact-card .value a:hover{color:var(--teal);border-color:var(--teal);}
+
+  .channel-list{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .channel-list a{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    padding:14px 18px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    transition:border-color 0.2s, background 0.2s;
+  }
+  .channel-list a:hover{border-color:var(--teal);background:var(--surface);}
+  .channel-list a .plat{color:var(--amber);}
+
+  @media(max-width:800px){
+    #contact-section .contact-grid{grid-template-columns:1fr;}
+  }
+
+  /* ============ SUMMARY ============ */
+  #summary .grid{
+    display:grid;
+    grid-template-columns:1fr 1.6fr;
+    gap:60px;
+  }
+  #summary h2.display{
+    font-size:clamp(30px,4vw,48px);
+    color:var(--text);
+  }
+  #summary p{
+    font-size:clamp(15px,1.6vw,18px);
+    line-height:1.75;
+    color:#c7c3ba;
+    max-width:60ch;
+  }
+  @media(max-width:800px){
+    #summary .grid{grid-template-columns:1fr;gap:24px;}
+  }
+
+  /* ============ SKILLS / TOOLKIT ============ */
+  .tracklist{
+    margin-top:40px;
+    border-top:1px solid var(--line);
+  }
+  .track{
+    border-bottom:1px solid var(--line);
+    padding:26px 0;
+  }
+  .track-heading{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    color:var(--muted);
+    margin-bottom:16px;
+  }
+
+  .chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    padding:8px 14px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:2px;
+    color:var(--text);
+    white-space:nowrap;
+    transition:border-color 0.2s, transform 0.2s;
+  }
+  .chip:hover{border-color:var(--teal);transform:translateY(-2px);}
+
+  /* ============ EXPERIENCE TIMELINE ============ */
+  .clip{
+    display:grid;
+    grid-template-columns:96px 1fr;
+    gap:24px;
+    padding:44px 0;
+    border-bottom:1px solid var(--line);
+    position:relative;
+  }
+  .clip:first-of-type{border-top:1px solid var(--line);}
+  .clip-num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .clip-num .n{
+    display:block;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:38px;
+    color:var(--line);
+    line-height:1;
+    margin-bottom:8px;
+    transition:color 0.4s;
+  }
+  .clip.active .clip-num .n{color:var(--teal);}
+  .clip-bar{
+    height:3px;
+    width:100%;
+    margin-bottom:16px;
+    background:linear-gradient(to right, var(--teal-dim), var(--amber-dim));
+    border-radius:2px;
+    transform-origin:left;
+    transform:scaleX(0.15);
+    transition:transform 0.6s ease;
+  }
+  .clip.active .clip-bar{transform:scaleX(1);}
+
+  .clip-role{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(24px,3vw,34px);
+    color:var(--text);
+    letter-spacing:0.01em;
+  }
+  .clip-org{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--amber);
+    margin-top:4px;
+    margin-bottom:16px;
+  }
+  .clip-org .loc{color:var(--muted);}
+  .clip ul{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+    max-width:64ch;
+  }
+  .clip ul li{
+    font-size:14.5px;
+    line-height:1.6;
+    color:#c7c3ba;
+    padding-left:18px;
+    position:relative;
+  }
+  .clip ul li::before{
+    content:"";
+    position:absolute;
+    left:0;top:8px;
+    width:6px;height:1px;
+    background:var(--teal);
+  }
+  .clip-links{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px 22px;
+    margin-top:18px;
+  }
+  .clip-link{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--teal);
+    border-bottom:1px solid var(--teal-dim);
+    padding-bottom:2px;
+    width:fit-content;
+  }
+  .clip-link:hover{border-color:var(--teal);}
+
+  @media(max-width:700px){
+    .clip{grid-template-columns:1fr;}
+  }
+
+  /* ============ EDUCATION ============ */
+  .edu-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+    margin-top:36px;
+  }
+  .edu-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    padding:32px;
+    border-radius:2px;
+  }
+  .edu-card .tc{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--teal);
+    letter-spacing:0.06em;
+    margin-bottom:14px;
+  }
+  .edu-card h3{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:24px;
+    font-weight:400;
+    margin-bottom:8px;
+    letter-spacing:0.01em;
+  }
+  .edu-card p{color:var(--muted);font-size:13.5px;}
+  @media(max-width:700px){
+    .edu-grid{grid-template-columns:1fr;}
+  }
+
+  /* ============ HOBBIES ============ */
+  .tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:32px;
+  }
+  .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    padding:9px 16px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    color:var(--muted);
+    transition:color 0.2s,border-color 0.2s;
+  }
+  .tag:hover{color:var(--text);border-color:var(--amber);}
+  .tag.ads{border-color:var(--amber-dim);color:var(--amber);}
+  .tag.ads:hover{border-color:var(--amber);}
+
+  /* ============ FOOTER ============ */
+  footer{
+    padding:100px clamp(20px,6vw,80px) 50px;
+    border-top:1px solid var(--line);
+  }
+  @media(min-width:901px){
+    footer{padding-left:calc(64px + clamp(20px,6vw,80px));}
+  }
+  .quote{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(26px,4.5vw,52px);
+    max-width:20ch;
+    color:var(--text);
+    line-height:1.15;
+    margin-bottom:40px;
+  }
+  .quote span{color:var(--teal);}
+  .copyright{margin-top:20px;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+
+  h2.section-title{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(32px,5vw,56px);
+    color:var(--text);
+    margin-bottom:8px;
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important;}
+    html{scroll-behavior:auto;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="dot"></span>AD // TIMELINE</div>
+  <nav>
+    <ul>
+      <li><a href="#hero">Home</a></li>
+      <li><a href="#contact-section">Contact</a></li>
+      <li><a href="#experience">Experience</a></li>
+      <li><a href="#education">Education</a></li>
+    </ul>
+  </nav>
+</header>
+
+<div id="rail">
+  <div class="track-line"></div>
+  <div class="playhead" id="playhead"></div>
+  <div class="tc mono" id="railTc">00:00:00:00</div>
+</div>
+
+<main>
+
+  <!-- HOME -->
+  <section id="hero">
+    <div class="hero-top">
+      <div class="rec"><span class="dot"></span>REC</div>
+      <div class="mono" id="clock">00:00:00:00</div>
+    </div>
+
+    <h1 class="display">ADEBOYE DANIEL<span>OLUWASEUN</span></h1>
+
+    <div class="role-line">
+      <span class="pill">Video Editor</span>
+      <span class="sep">/</span>
+      <span class="pill">Content Creator</span>
+      <span class="sep">/</span>
+      <span class="pill">Social Media &amp; Ads Management</span>
+    </div>
+
+    <div class="hero-meta">
+      <div>
+        <span class="label">Based in</span>
+        Lagos, Nigeria
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact-section">
+    <div class="eyebrow">Cut / 01 — Contact</div>
+    <h2 class="section-title">Let's Get In Touch</h2>
+
+    <div class="contact-grid">
+      <div class="contact-card">
+        <span class="label">Email</span>
+        <span class="value"><a href="mailto:adeboyedaniel002@gmail.com">adeboyedaniel002@gmail.com</a></span>
+      </div>
+      <div class="contact-card">
+        <span class="label">Phone</span>
+        <span class="value"><a href="tel:+2347043922231">+234 704 392 2231</a></span>
+      </div>
+      <div class="contact-card">
+        <span class="label">Location</span>
+        <span class="value">Lagos, Nigeria</span>
+      </div>
+      <div class="contact-card">
+        <span class="label">Availability</span>
+        <span class="value">Open to freelance &amp; full-time</span>
+      </div>
+    </div>
+
+    <div class="channel-list" style="margin-top:24px;">
+      <a href="https://www.youtube.com/@CelebrateMen" target="_blank" rel="noopener"><span>Golden Era — YouTube</span><span class="plat">↗</span></a>
+      <a href="https://instagram.com/celebrate.men" target="_blank" rel="noopener"><span>Celebrate Men — Instagram</span><span class="plat">↗</span></a>
+      <a href="https://youtube.com/@mesoblow" target="_blank" rel="noopener"><span>Mesoblow — YouTube</span><span class="plat">↗</span></a>
+      <a href="https://www.instagram.com/mesoblow/" target="_blank" rel="noopener"><span>Mesoblow — Instagram</span><span class="plat">↗</span></a>
+    </div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section id="summary">
+    <div class="eyebrow">Cut / 02 — Profile</div>
+    <div class="grid">
+      <h2 class="display">THREE YEARS<br>BEHIND THE TIMELINE</h2>
+      <p>
+        Experienced video editor and content creator with three years of practical experience bringing stories to life through video. I don't just edit — I shoot original footage, craft it into clear and engaging content, and run the paid ad campaigns that put it in front of the right audience.
+        <br><br>
+        Across YouTube videos, Instagram Reels, TikToks, Shorts, and longer-form documentaries, I shape raw footage through cutting, color grading, sound, and motion graphics — always aiming for work that looks great, speaks to the audience, carries the brand's voice, and measurably grows the business behind it.
+      </p>
+    </div>
+  </section>
+
+  <!-- SKILLS / TOOLKIT -->
+  <section id="skills">
+    <div class="eyebrow">Cut / 03 — Toolkit</div>
+    <h2 class="section-title">Toolkit, Laid Out Like a Sequence</h2>
+
+    <div class="tracklist">
+      <div class="track">
+        <div class="track-heading">Editing &amp; Motion</div>
+        <div class="chips">
+          <span class="chip">CapCut</span>
+          <span class="chip">Motion Graphics</span>
+          <span class="chip">Color Grading &amp; LUTs</span>
+          <span class="chip">Audio Mixing &amp; Syncing</span>
+        </div>
+      </div>
+      <div class="track">
+        <div class="track-heading">Design &amp; Content</div>
+        <div class="chips">
+          <span class="chip">Photoshop</span>
+          <span class="chip">Canva</span>
+          <span class="chip">Figma</span>
+          <span class="chip">YouTube Documentaries</span>
+          <span class="chip">Instagram Reels</span>
+          <span class="chip">TikTok Edits</span>
+          <span class="chip">Shorts &amp; Ads</span>
+          <span class="chip">Cinematic Interviews</span>
+        </div>
+      </div>
+      <div class="track">
+        <div class="track-heading">Platforms &amp; Optimization</div>
+        <div class="chips">
+          <span class="chip">Instagram &amp; TikTok Trends</span>
+          <span class="chip">YouTube SEO</span>
+          <span class="chip">Thumbnail Strategy</span>
+          <span class="chip">Watch Time Strategy</span>
+          <span class="chip">Cross-Platform Repurposing</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE -->
+  <section id="experience">
+    <div class="eyebrow">Cut / 04 — Experience</div>
+    <h2 class="section-title">Experience</h2>
+
+    <div class="clips">
+
+      <div class="clip" data-clip>
+        <div class="clip-num"><span class="n">01</span>U.K.</div>
+        <div class="clip-body">
+          <div class="clip-bar"></div>
+          <div class="clip-role">Creative Lead &amp; Video Editor</div>
+          <div class="clip-org">Golden Era YouTube Channel <span class="loc">— United Kingdom</span></div>
+          <ul>
+            <li>Source, edit, and produce long-form YouTube documentaries and short reels with cinematic storytelling.</li>
+            <li>Managed the visual identity of the channel, ensuring consistency across all uploads.</li>
+            <li>Coordinated script, visuals, and audio to maintain a professional, engaging brand presence.</li>
+            <li>Achieved significant audience engagement growth by producing content that resonates with both sports and culture fans.</li>
+          </ul>
+          <div class="clip-links">
+            <a class="clip-link" href="https://www.youtube.com/@CelebrateMen" target="_blank" rel="noopener">Watch the channel ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="clip" data-clip>
+        <div class="clip-num"><span class="n">02</span>U.K.</div>
+        <div class="clip-body">
+          <div class="clip-bar"></div>
+          <div class="clip-role">Content Creator &amp; Social Media Manager</div>
+          <div class="clip-org">Celebrate Men <span class="loc">— United Kingdom</span></div>
+          <ul>
+            <li>Source and curate inspiring stories celebrating outstanding men, shaping raw ideas into engaging visual content.</li>
+            <li>Collaborate closely with a graphic designer to produce polished, on-brand graphics and video posts.</li>
+            <li>Manage the Instagram page end to end, publishing daily content to grow and sustain audience engagement.</li>
+            <li>Planned and ran paid ad campaigns to boost brand visibility and drive engagement.</li>
+          </ul>
+          <div class="clip-links">
+            <a class="clip-link" href="https://instagram.com/celebrate.men" target="_blank" rel="noopener">View on Instagram ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="clip" data-clip>
+        <div class="clip-num"><span class="n">03</span>NG</div>
+        <div class="clip-body">
+          <div class="clip-bar"></div>
+          <div class="clip-role">Social Media Manager &amp; Video Editor</div>
+          <div class="clip-org">Classic Cream <span class="loc">— Nigeria</span></div>
+          <ul>
+            <li>Managed and edited content for Classic Cream's Instagram page, maintaining a consistent, on-brand visual style across every post.</li>
+            <li>Planned and ran paid ad campaigns to boost brand visibility and drive engagement for the bread brand.</li>
+          </ul>
+          <div class="clip-links">
+            <a class="clip-link" href="https://instagram.com/_classiccream_" target="_blank" rel="noopener">View on Instagram ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="clip" data-clip>
+        <div class="clip-num"><span class="n">04</span>RMT</div>
+        <div class="clip-body">
+          <div class="clip-bar"></div>
+          <div class="clip-role">Videographer &amp; Video Editor</div>
+          <div class="clip-org">Mesoblow <span class="loc">— Remote</span></div>
+          <ul>
+            <li>Shoot and edit long-form YouTube vlog content, capturing authentic footage tailored to Mesoblow's personal brand and audience.</li>
+            <li>Film and edit comedic skits, managing the full production process from concept and shooting through to final cut.</li>
+            <li>Handle post-production including pacing, transitions, sound, and effects to boost visibility and strengthen audience connection.</li>
+          </ul>
+          <div class="clip-links">
+            <a class="clip-link" href="https://youtube.com/@mesoblow" target="_blank" rel="noopener">Watch on YouTube ↗</a>
+            <a class="clip-link" href="https://www.instagram.com/mesoblow/" target="_blank" rel="noopener">View on Instagram ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="clip" data-clip>
+        <div class="clip-num"><span class="n">05</span>NG</div>
+        <div class="clip-body">
+          <div class="clip-bar"></div>
+          <div class="clip-role">Freelance Video Editor</div>
+          <div class="clip-org">Local Artists &amp; Creators <span class="loc">— Nigeria</span></div>
+          <ul>
+            <li>Partnered with independent artists and small businesses on a freelance basis to create reels, promos, and storytelling videos tailored to each client's brand.</li>
+            <li>Delivered fast-turnaround, high-quality edits that balanced each client's creative vision with platform trends and best practices.</li>
+            <li>Helped multiple clients grow their social media presence through consistent, professional content.</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- EDUCATION -->
+  <section id="education">
+    <div class="eyebrow">Cut / 05 — Training</div>
+    <h2 class="section-title">Education</h2>
+
+    <div class="edu-grid">
+      <div class="edu-card">
+        <div class="tc mono">SEPT 2021 — JULY 2025</div>
+        <h3>B.Sc. Computer Science</h3>
+        <p>Crawford University, Ogun State, Nigeria</p>
+      </div>
+      <div class="edu-card">
+        <div class="tc mono">JUNE 2024 — OCT 2024</div>
+        <h3>Software &amp; Creative Media Training</h3>
+        <p>CVIT, Lagos, Nigeria — Meta Ads certification track</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOBBIES -->
+  <section id="interests">
+    <div class="eyebrow">Cut / 06 — B-Roll</div>
+    <h2 class="section-title">Off the Clock</h2>
+    <div class="tags">
+      <span class="tag">Filmmaking &amp; short story creation</span>
+      <span class="tag">Documentary analysis</span>
+      <span class="tag">Music for creative edits</span>
+      <span class="tag">Photography &amp; color grading</span>
+      <span class="tag">Motion graphics experiments</span>
+      <span class="tag">Trend tracking — YT / TikTok / IG</span>
+      <span class="tag">Storyboarding &amp; scripting</span>
+      <span class="tag">New tools &amp; plugins</span>
+      <span class="tag">Gaming for inspiration</span>
+      <span class="tag">Branding &amp; digital storytelling</span>
+      <span class="tag ads">Meta Ads</span>
+      <span class="tag ads">Google Ads</span>
+      <span class="tag ads">Ad campaign strategy</span>
+      <span class="tag ads">Audience targeting &amp; analytics</span>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="eyebrow">Cut / 07 — Outro</div>
+  <div class="quote">"Excellence is not an act, but <span>a habit</span>. I strive to make every project my best work yet."</div>
+  <div class="copyright">© <span id="year"></span> Adeboye Daniel Oluwaseun. Cut on repeat.</div>
+</footer>
+
+<script>
+  // Running timecode clock in the hero — purely decorative "recording" feel
+  const clockEl = document.getElementById('clock');
+  const start = Date.now();
+  function pad(n, len=2){ return String(n).padStart(len,'0'); }
+  function tick(){
+    const elapsed = Date.now() - start;
+    const totalFrames = Math.floor(elapsed / (1000/24)); // 24fps
+    const frames = totalFrames % 24;
+    const totalSeconds = Math.floor(elapsed/1000);
+    const seconds = totalSeconds % 60;
+    const minutes = Math.floor(totalSeconds/60) % 60;
+    const hours = Math.floor(totalSeconds/3600);
+    const tc = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(frames)}`;
+    if(clockEl) clockEl.textContent = tc;
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // Scroll-driven playhead rail
+  const playhead = document.getElementById('playhead');
+  const railTc = document.getElementById('railTc');
+  function updateRail(){
+    const doc = document.documentElement;
+    const scrollTop = doc.scrollTop || document.body.scrollTop;
+    const scrollHeight = (doc.scrollHeight - doc.clientHeight) || 1;
+    const progress = Math.min(Math.max(scrollTop/scrollHeight,0),1);
+
+    if(playhead){
+      const railHeight = window.innerHeight - 160;
+      playhead.style.height = (progress*railHeight) + 'px';
+    }
+    if(railTc){
+      const totalSecondsVirtual = Math.floor(progress * 3600); // maps scroll to a virtual hour of footage
+      const m = Math.floor(totalSecondsVirtual/60);
+      const s = totalSecondsVirtual % 60;
+      railTc.textContent = `00:${pad(m)}:${pad(s)}:00`;
+      railTc.style.top = `calc(${76 + progress*(window.innerHeight-160)}px)`;
+    }
+  }
+  document.addEventListener('scroll', updateRail, {passive:true});
+  window.addEventListener('resize', updateRail);
+  updateRail();
+
+  // Active clip highlight via IntersectionObserver
+  const clips = document.querySelectorAll('[data-clip]');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add('active');
+      }
+    });
+  }, { threshold:0.3 });
+  clips.forEach(c=>io.observe(c));
+
+  // Year
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>
